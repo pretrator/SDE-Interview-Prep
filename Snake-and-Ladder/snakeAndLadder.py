@@ -134,6 +134,16 @@ class Ladder(BoardEntity):
             return self._top
         return currentPos
 
+class Teleport(BoardEntity):
+    def __init__(self, start, to):
+        self._from = start
+        self._to = to
+    
+    def effect(self, currentPos):
+        if(currentPos == self._from):
+            print("Teleport", self._to)
+            return self._to
+        return currentPos
 
 class Player():
     def __init__(self, name):
@@ -170,6 +180,14 @@ class ChanceManagerInterface(ABC):
         # Will check rule and tell whose turn is next
     # currentTurn
 
+class RuleContext():
+    def __init__(self, faceValue, player, countTurns, startingPos, position = None):
+        self.faceValue = faceValue
+        self.player = player
+        self.countTurns = countTurns
+        self.position = position
+        self.startingPos = startingPos
+
 class ChanceManager(ChanceManagerInterface):
     def __init__(self, players, startingPlayerIdx, rules):
         self._players = players
@@ -177,8 +195,8 @@ class ChanceManager(ChanceManagerInterface):
         self._countTurns = 0
         self._rules = rules
 
-    def nextTurn(self, faceValue):
-        isNextPlayersTurn = self._rules.isNextPlayersTurn(faceValue, self._countTurns)
+    def nextTurn(self, ruleContext):
+        isNextPlayersTurn = self._rules.isNextPlayersTurn(ruleContext)
         if(isNextPlayersTurn):
             self._currentChance = (self._currentChance + 1) % len(self._players)
             self._countTurns = 0
@@ -200,11 +218,11 @@ class RuleInterface(ABC):
         pass
     
     @abstractmethod
-    def moveEligibility(self, faceValue, player, countTurns):
+    def moveEligibility(self, ruleContext):
         pass
     
     @abstractmethod
-    def isNextPlayersTurn(self, faceValue, countTurns):
+    def isNextPlayersTurn(self, ruleContext):
         pass
 
 # 7. Rules
@@ -212,35 +230,129 @@ class RuleInterface(ABC):
     # Opening Rule
     # Winning Rule
 
-class RuleSet1(RuleInterface):
-    def __init__(self, board):
-        self._board = board
-        self._eligibleFirstFaceValues = ELIGIBLE_FIRST_FACE_VALUES
-        self._turnCanCellation = TURN_CANCELLATION_NUMBER
+class RuleManager(RuleInterface):
+    def __init__(self, rules = []):
+        self._rules = rules
+    
+    def addRule(self, rule):
+        self._rules.append(rule)
+        return self
 
-    def isWon(self, player):
-        position = self._board.getPlayerPosition(player)
-        return self._board._winningPos == position
+    def isWon(self, ruleContext):
+        isWon = False
+        for rule in self._rules:
+            isWon = isWon or rule.isWon(ruleContext)
+        return isWon
 
-    def moveEligibility(self, faceValue, player, countTurns):
-        position = self._board.getPlayerPosition(player)
-        # 666 cancellation of move
-        if(faceValue == self._turnCanCellation and countTurns == 2):
-            return False
-        
-        if(position == self._board.startPos):
-            if(faceValue in self._eligibleFirstFaceValues): return True
-            return False
-        elif(position + faceValue > self._board.winningPos):
-            return False
+    def moveEligibility(self, ruleContext):
+        isAllowedtoMove = True
+        for rule in self._rules:
+            isAllowedtoMove = isAllowedtoMove and rule.moveEligibility(ruleContext)
+        return isAllowedtoMove
+    
+    def isNextPlayersTurn(self, ruleContext):
+        isNextPlayerTurn = True
+        for rule in self._rules:
+            isNextPlayerTurn = isNextPlayerTurn and rule.isNextPlayersTurn(ruleContext)
+        return isNextPlayerTurn
+    
+class OpeningMoveRule(RuleInterface):
+    def __init__(self):
+        self.OPENING_VALUE = 6
+    
+    def isWon(self, ruleContext):
+        return False
+
+    def moveEligibility(self, ruleContext: RuleContext):
+        if(ruleContext.position == 1):
+            return ruleContext.faceValue == self.OPENING_VALUE
         return True
     
-    def isNextPlayersTurn(self, faceValue, countTurns):
-        if(faceValue == self._turnCanCellation and countTurns < 3):
-            return True
-        if(faceValue == self._turnCanCellation):
+    def isNextPlayersTurn(self, ruleContext):
+        if(ruleContext.position == 1):
+            return ruleContext.faceValue != self.OPENING_VALUE
+        return True
+
+class WinningRule(RuleInterface):
+    def __init__(self, board):
+        self._board = board
+
+    def isWon(self, ruleContext: RuleContext):
+        return ruleContext.position == self._board.winningPos
+
+    def moveEligibility(self, ruleContext: RuleContext):
+        if(ruleContext.position + ruleContext.faceValue > self._board.winningPos):
             return False
         return True
+
+
+    def isNextPlayersTurn(self, ruleContext: RuleContext):
+        return True
+        
+class Three6CalcelRule(RuleInterface):
+    def __init__(self):
+        self.CANCELLATION_NUM = 6
+        self.MAX_ALLOWED_TURN = 3
+
+    def isWon(self, ruleContext: RuleContext):
+        return False
+
+    def moveEligibility(self, ruleContext: RuleContext):
+        if(ruleContext.countTurns == self.MAX_ALLOWED_TURN - 1 and ruleContext.faceValue == self.CANCELLATION_NUM):
+            return False
+        return True
+
+    def isNextPlayersTurn(self, ruleContext: RuleContext):
+        return True
+
+class LessThenThreeSixRule(RuleInterface):
+    def __init__(self):
+        self.CONTINUATION_NUMBER = 6
+
+    def isWon(self, ruleContext: RuleContext):
+        return False
+
+    def moveEligibility(self, ruleContext: RuleContext):
+        return True
+
+    def isNextPlayersTurn(self, ruleContext: RuleContext):
+        if ruleContext.faceValue == self.CONTINUATION_NUMBER and ruleContext.countTurns < 2:
+            return False
+        return True
+
+# class RuleSet1(RuleInterface):
+#     def __init__(self, board):
+#         self._board = board
+#         self._eligibleFirstFaceValues = ELIGIBLE_FIRST_FACE_VALUES
+#         self._turnCanCellation = TURN_CANCELLATION_NUMBER
+#         self._rules = []
+
+#     def addRules():
+#         pass
+
+#     def isWon(self, player):
+#         position = self._board.getPlayerPosition(player)
+#         return self._board.winningPos == position
+
+#     def moveEligibility(self, faceValue, player, countTurns):
+#         position = self._board.getPlayerPosition(player)
+#         # 666 cancellation of move
+#         if(faceValue == self._turnCanCellation and countTurns == 2):
+#             return False
+        
+#         if(position == self._board.startPos):
+#             if(faceValue in self._eligibleFirstFaceValues): return True
+#             return False
+#         elif(position + faceValue > self._board.winningPos):
+#             return False
+#         return True
+    
+#     def isNextPlayersTurn(self, faceValue, countTurns):
+#         if(faceValue == self._turnCanCellation and countTurns < 3):
+#             return False
+#         if(faceValue == self._turnCanCellation):
+#             return countTurns == 2
+#         return True
         
 
 
@@ -273,7 +385,7 @@ class BoardInterface(ABC):
 
 class Board(BoardInterface):
     # Board is always a square
-    def __init__(self, sideSize, startPos, boardEntity = [], players = []):
+    def __init__(self, sideSize, boardEntity = [], players = []):
         self._sideSize = sideSize
         self._startingPos = BOARD_START_POS # start position never change
         self._winningPos = (self._sideSize * self._sideSize)
@@ -323,27 +435,34 @@ class GamePlay():
         self._rules = rules
         self._winner = None
 
-    def _updateGameStatus(self, player):
-        isPlayerWon = self._rules.isWon(player)
+    def _updateGameStatus(self, ruleContext):
+        isPlayerWon = self._rules.isWon(ruleContext)
         if(isPlayerWon):
             self._gameState = GameStates.WON
-            self._winner = player
+            self._winner = ruleContext.player
+
+    def _createRuleContext(self, player, faceValue, playerWithChance, turnCount):
+        position = self._board.getPlayerPosition(player)
+        ruleContext = RuleContext(faceValue, playerWithChance, turnCount, self._board.startPos, position)
+        return ruleContext
 
     def playGame(self):
         if(self._chanceManager is None or self._dice is None or self._board is None or self._rules is None):
             return print("Complete Initialtion to play the game")
         while(self._gameState == GameStates.ONGOING):
             playerWithChance = self._chanceManager.getCurrentPlayer()
-            print("Chance of ", playerWithChance.name)
+            print("Chance of ", playerWithChance.name, self._board.getPlayerPosition(playerWithChance))
             faceValue = self._dice.roll()
             print("Rolled Value", faceValue)
             turnCount = self._chanceManager.getCurrentPlayerTurnCount()
-            isMoveEligible = self._rules.moveEligibility(faceValue, playerWithChance, turnCount)
+            ruleContext = self._createRuleContext(playerWithChance, faceValue, playerWithChance, turnCount)
+            isMoveEligible = self._rules.moveEligibility(ruleContext)
             if(isMoveEligible): 
                 print("Allowed to move")
                 self._board.setPosition(faceValue, playerWithChance)
-            self._updateGameStatus(playerWithChance)
-            self._chanceManager.nextTurn(faceValue)
+            ruleContext = self._createRuleContext(playerWithChance, faceValue, playerWithChance, turnCount)
+            self._updateGameStatus(ruleContext)
+            self._chanceManager.nextTurn(ruleContext)
         print("Player", self._winner.name, "has won")
 
     def setChanceManager(self, chanceManager):
@@ -363,19 +482,27 @@ class GamePlay():
         return self
             
 if __name__ == "__main__":
-    players = [Player("Chiya"), Player("Lucky")]
-    board = (Board(10, 0)
+    players = [Player("Chiya"), Player("Lucky"), Player("Kukku")]
+    board = (Board(10)
         .addBoardEntity(Snake(12, 6))
         .addBoardEntity(Snake(99, 10))
         .addBoardEntity(Snake(90, 70))
         .addBoardEntity(Ladder(2, 45))
         .addBoardEntity(Ladder(22, 72))
         .addBoardEntity(Ladder(15, 20))
+        .addBoardEntity(Teleport(25, 37))
         .addPlayer(players[0])
         .addPlayer(players[1])
+        .addPlayer(players[2])
     )
 
-    rules = RuleSet1(board)
+    rules = (RuleManager()
+             .addRule(WinningRule(board))
+             .addRule(OpeningMoveRule())
+             .addRule(Three6CalcelRule())
+             .addRule(LessThenThreeSixRule())
+             )
+
     chanceManager = ChanceManager(players, 0, rules)
     gamePlay = (GamePlay()
                     .setDice(Dice(6))
@@ -385,3 +512,17 @@ if __name__ == "__main__":
                     .playGame()
     )
 # We have allowed multiple players to occupy same position
+
+
+
+# 1. Opening Rule
+#     -> Agar 6 nahi aaya to nahi chalne denge -> move is not allowed
+# 2. Winning Rule
+#     -> 98 -> face value of 5 -> move not allowed
+# 3. 666 Sadane ka
+#     -> move not allowed
+# 4. no turn change on single or doubel 6 rule
+#     -> turn not changed
+
+
+
