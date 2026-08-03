@@ -498,7 +498,7 @@ if __name__ == "__main__":
 
     rules = (RuleManager()
              .addRule(WinningRule(board))
-             .addRule(OpeningMoveRule())
+            #  .addRule(OpeningMoveRule())
              .addRule(Three6CalcelRule())
              .addRule(LessThenThreeSixRule())
              )
