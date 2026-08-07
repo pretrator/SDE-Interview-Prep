@@ -10,10 +10,18 @@ class Radio():
         self.state = RadioState.STOPPED
 
     def play(self):
-        pass
+        if self.state == RadioState.PLAYING:
+            print('already playing')
+        if self.state == RadioState.STOPPED:
+            self.state = RadioState.PLAYING
+            print(' stopped  to Playing')
+        if self.state == RadioState.STOPPED:
+            self.state = RadioState.PLAYING
+            print(' stopped  to Playing')
+        
 
     def pause(self):
-        pass
+        self.state = RadioState.PLAYING
 
     def stop(self):
         pass
