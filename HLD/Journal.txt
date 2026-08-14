@@ -1,0 +1,45 @@
+File Descriptor
+
+    -> EmptySpace() ?? 
+    location Nuber 11-14 15-18 19-22 23-26 27-30
+                    0101 0101  0000  1011  1010 
+                    c.   h.    i.    y.    a
+
+
+disk offset -> 
+file Offset -> file offset -> 50kb
+ram -> 
+    1byte
+    00000000
+    7 - 15
+
+Write Heavy Application
+Write speed 
+    20mbps
+    30mbps
+
+1TBPS 
+1tb/20mbps
+
+REad 
+write 
+
+7200 rpm
+
+Locate the data
+Move the arm
+Wait until file offset is under the head 
+Read/Write
+
+1mb/4kb
+aaaaaaaaaaaaaaa
+Serial Read
+Serial Write
+
+Read
+Write
+
+
+
+
+
