@@ -49,9 +49,9 @@ tree -> 10000
     3000 Node
 Journal -> 
 File 
-    2-file
-    1-file
-    0-file
+    2-file. k - 30 segment
+    1-file. k - 57
+    0-file. k - 110
 
 Read -> 
     1. Search on Tree -> log(10000) -> O(1)
@@ -72,3 +72,17 @@ Job
 Tombstone
 
 Problems -> 
+    1. Read Slow
+    2. Stale updates reside on the disk
+        Data Redundancy
+
+Example -> 
+    IOT -> 
+    Cassandra -> 
+
+
+
+T|Write
+Hataya 
+
+Hata ke bata diya 

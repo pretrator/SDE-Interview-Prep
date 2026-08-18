@@ -33,6 +33,9 @@ class SimpleDB():
         if key not in self.hash: return
         return self.hash[key]
 
+    # Ram
+    # Hard disk 
+    # Network
     def write(self, key, value):
         self.hash[key] = value
         self.persist()
@@ -54,6 +57,28 @@ class SimpleDB():
             deserialized = json.loads(file_contents)
             return deserialized
 
+# RAM -> 4GB
+# CPU -> 
+# HDD -> 100 -> 
+# Network
+
+#     RAM 200GB 
+#     HDD 1000GB 
+#     # Ram
+#         -> O(1) for update
+#         => O(N) for new key
+#     # Hard disk 
+#         -> Read IOPS 10GBps
+#         -> Write IOPS 40GPps
+#         200GB 
+#         1 write -> 
+
+#     # Network
+#         -> 1GBps
+#         -> latency -> 
+# delta -> 
+
+
 
 
 
@@ -70,13 +95,38 @@ sdb = SimpleDB("Chiya")
 print(sdb.read("SName"))
 
 
+ 
+# read -> 
+#     speed of read -> 
 
-read -> 
-    speed of read -> 
+# write ->
+#     10GB
+#     100GB 
+#     100GB 
 
-write ->
-    10GB
-    100GB 
-    100GB 
+# Write Amplification
 
-Write Amplification
+
+# 100GB HDD
+# 4GB RAM
+
+# How much data we can store
+#     Ankur -> 4GB
+#     Chiya -> 
+#     Khusboo -> 
+
+# Read -> 
+#     1 read per second 
+#     20k reads per second ->
+#         stress 
+#             -> Network BandWidth (4mbps)
+#                 15000
+#             -> Network CArd (10 GBPS)
+#             -> Ram bus speed 48GBPS
+#             -> Network Queue =
+
+# /simpleDb/read/key
+
+Write -> 
+    1 write per second 
+    Neto
